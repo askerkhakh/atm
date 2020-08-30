@@ -33,7 +33,7 @@ class AtmApplicationTests {
     }
 
     @Test
-    void getCardByNumber() {
+    void getExistingCardByNumber() {
         final String testCardNumber = "123";
 
         // given:
@@ -42,12 +42,29 @@ class AtmApplicationTests {
         cardRepository.save(card);
 
         // when:
-        final ResponseEntity<CardDto> response = restTemplate.getForEntity("/cards/{card-number}", CardDto.class, Map.of("card-number", testCardNumber));
+        final ResponseEntity<CardDto> response = restTemplate.getForEntity(
+                "/cards/{card-number}",
+                CardDto.class,
+                Map.of("card-number", testCardNumber)
+        );
 
         // then:
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getNumber()).isEqualTo(testCardNumber);
+    }
+
+    @Test
+    void getCardByNumberWhichDoesNotExist() {
+        // when:
+        final ResponseEntity<CardDto> response = restTemplate.getForEntity(
+                "/cards/{card-number}",
+                CardDto.class,
+                Map.of("card-number", "someRandomNumber")
+        );
+
+        // then:
+        assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.NOT_FOUND);
     }
 
 }
