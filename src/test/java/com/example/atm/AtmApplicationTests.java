@@ -27,6 +27,7 @@ class AtmApplicationTests {
 
     @Autowired
     private CardRepository cardRepository;
+    public static final String TEST_CARD_NUMBER = "123";
 
     @Test
     void contextLoads() {
@@ -34,24 +35,22 @@ class AtmApplicationTests {
 
     @Test
     void getExistingCardByNumber() {
-        final String testCardNumber = "123";
-
         // given:
         final Card card = new Card();
-        card.setNumber(testCardNumber);
+        card.setNumber(TEST_CARD_NUMBER);
         cardRepository.save(card);
 
         // when:
         final ResponseEntity<CardDto> response = restTemplate.getForEntity(
                 "/cards/{card-number}",
                 CardDto.class,
-                Map.of("card-number", testCardNumber)
+                Map.of("card-number", TEST_CARD_NUMBER)
         );
 
         // then:
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getNumber()).isEqualTo(testCardNumber);
+        assertThat(response.getBody().getNumber()).isEqualTo(TEST_CARD_NUMBER);
     }
 
     @Test
@@ -61,6 +60,25 @@ class AtmApplicationTests {
                 "/cards/{card-number}",
                 CardDto.class,
                 Map.of("card-number", "someRandomNumber")
+        );
+
+        // then:
+        assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getBlockedCardShouldReturn404() {
+        // given:
+        final Card card = new Card();
+        card.setNumber(TEST_CARD_NUMBER);
+        card.setBlocked(true);
+        cardRepository.save(card);
+
+        // when:
+        final ResponseEntity<CardDto> response = restTemplate.getForEntity(
+                "/cards/{card-number}",
+                CardDto.class,
+                Map.of("card-number", TEST_CARD_NUMBER)
         );
 
         // then:

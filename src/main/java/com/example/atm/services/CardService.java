@@ -14,7 +14,7 @@ public class CardService {
     private final CardMapper mapper;
 
     public CardDto getCardByNumber(String number) {
-        return mapper.cardToCardDto(cardRepository.getByNumber(number));
+        return mapper.cardToCardDto(cardRepository.getByNumberAndBlockedIsFalse(number));
     }
 
 }

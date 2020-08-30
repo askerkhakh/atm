@@ -19,4 +19,6 @@ public class Card {
 
     @Column(unique = true)
     String number;
+
+    boolean blocked = false;
 }

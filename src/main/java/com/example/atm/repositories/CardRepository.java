@@ -10,10 +10,10 @@ import java.util.Optional;
 @Repository
 public interface CardRepository extends JpaRepository<Card, Long> {
 
-    Optional<Card> findByNumber(String number);
+    Optional<Card> findByNumberAndBlockedIsFalse(String number);
 
-    default Card getByNumber(String number) {
-        return findByNumber(number).orElseThrow(EntityNotFoundException::new);
+    default Card getByNumberAndBlockedIsFalse(String number) {
+        return findByNumberAndBlockedIsFalse(number).orElseThrow(EntityNotFoundException::new);
     }
 
 }
