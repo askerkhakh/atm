@@ -1,5 +1,6 @@
 package com.example.atm.controllers;
 
+import com.example.atm.dto.BalanceDto;
 import com.example.atm.dto.CardDto;
 import com.example.atm.services.CardService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,11 @@ public class CardController {
     @GetMapping("/cards/{number}")
     CardDto cardByNumber(@PathVariable String number) {
         return cardService.getCardByNumber(number);
+    }
+
+    @GetMapping("/balance/{cardNumber}")
+    BalanceDto getBalance(@PathVariable String cardNumber) {
+        return cardService.getCardBalanceByNumber(cardNumber);
     }
 
 }
