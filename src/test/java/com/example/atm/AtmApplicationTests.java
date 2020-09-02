@@ -2,6 +2,7 @@ package com.example.atm;
 
 import com.example.atm.domain.BalanceQuerying;
 import com.example.atm.domain.Card;
+import com.example.atm.domain.CashRequest;
 import com.example.atm.domain.Operation;
 import com.example.atm.dto.BalanceDto;
 import com.example.atm.dto.CardDto;
@@ -144,6 +145,7 @@ class AtmApplicationTests {
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getAmount()).isEqualByComparingTo(BigDecimal.ONE);
+
         final List<Operation> operations = operationRepository.findAll();
         assertThat(operations).hasSize(1);
         final Operation operation = operations.get(0);
@@ -156,6 +158,59 @@ class AtmApplicationTests {
         card.setNumber(TEST_CARD_NUMBER);
         card.setPin("{noop}" + TEST_CARD_PIN);
         return card;
+    }
+
+    @Test
+    void getCashWhenThereIsNotEnoughMoneyOnCard() {
+        // given:
+        final Card card = buildDefaultValidCard();
+        card.setBalance(BigDecimal.ONE);
+        cardRepository.save(card);
+
+        // when:
+        final var response = restTemplate
+                .withBasicAuth(TEST_CARD_NUMBER, TEST_CARD_PIN)
+                .postForEntity(
+                        "/cash-request?card-number={cardNumber}&amount={amount}",
+                        null,
+                        BalanceDto.class,
+                        Map.of("cardNumber", TEST_CARD_NUMBER, "amount", BigDecimal.TEN)
+                );
+
+        // then:
+        assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void getCashWhenThereIsEnoughMoneyOnCard() {
+        // given:
+        final Card card = buildDefaultValidCard();
+        card.setBalance(BigDecimal.TEN);
+        cardRepository.save(card);
+
+        // when:
+        final var response = restTemplate
+                .withBasicAuth(TEST_CARD_NUMBER, TEST_CARD_PIN)
+                .postForEntity(
+                        "/cash-request?card-number={cardNumber}&amount={amount}",
+                        null,
+                        BalanceDto.class,
+                        Map.of("cardNumber", TEST_CARD_NUMBER, "amount", BigDecimal.ONE)
+                );
+
+        // then:
+        assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(9));
+        final Card savedCard = cardRepository.getByNumberAndBlockedIsFalse(TEST_CARD_NUMBER);
+        assertThat(savedCard.getBalance()).isEqualByComparingTo(BigDecimal.valueOf(9));
+
+        final List<Operation> operations = operationRepository.findAll();
+        assertThat(operations).hasSize(1);
+        final Operation operation = operations.get(0);
+        assertThat(operation).isInstanceOf(CashRequest.class);
+        assertThat(operation.getCard()).isEqualTo(card);
+        assertThat(((CashRequest) operation).getAmount()).isEqualByComparingTo(BigDecimal.ONE);
     }
 
 }
