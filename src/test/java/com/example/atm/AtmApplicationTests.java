@@ -8,6 +8,7 @@ import com.example.atm.dto.BalanceDto;
 import com.example.atm.dto.CardDto;
 import com.example.atm.repositories.CardRepository;
 import com.example.atm.repositories.OperationRepository;
+import com.example.atm.services.LoginAttemptService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -109,6 +110,35 @@ class AtmApplicationTests {
         // then:
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
     }
+
+    @Test
+    void cardBlockedAfterFourAttempts() {
+        // given:
+        saveTestCardInRepository();
+
+        // when:
+        HttpStatus status = HttpStatus.OK;
+        int attemptCount = 1;
+        for (int i = 1; i <= LoginAttemptService.MAX_LOGIN_ATTEMPT + 1; i++) {
+            for (int j = 1; j <= i; j++) {
+                final ResponseEntity<Void> response = restTemplate.withBasicAuth(TEST_CARD_NUMBER, "4321")
+                        .postForEntity("/login", null, Void.class);
+                assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.UNAUTHORIZED);
+                attemptCount = j;
+            }
+            final ResponseEntity<Void> response = restTemplate.withBasicAuth(TEST_CARD_NUMBER, TEST_CARD_PIN)
+                    .postForEntity("/login", null, Void.class);
+            if (response.getStatusCode() != HttpStatus.OK) {
+                status = response.getStatusCode();
+                break;
+            }
+        }
+
+        // then:
+        assertThat(attemptCount).isEqualTo(LoginAttemptService.MAX_LOGIN_ATTEMPT);
+        assertThat(status).isEqualByComparingTo(HttpStatus.UNAUTHORIZED);
+    }
+
 
     @Test
     void loginWithIncorrectPassword() {

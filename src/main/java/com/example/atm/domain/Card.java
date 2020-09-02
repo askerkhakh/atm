@@ -30,4 +30,6 @@ public class Card {
     boolean blocked = false;
 
     BigDecimal balance = BigDecimal.valueOf(0);
+
+    int loginAttemptCount = 0;
 }
