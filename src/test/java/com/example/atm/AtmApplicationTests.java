@@ -13,9 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.annotation.DirtiesContext;
@@ -34,6 +31,7 @@ class AtmApplicationTests {
 
     public static final String TEST_CARD_NUMBER = "123";
     public static final String TEST_CARD_PIN = "1234";
+    public static final String WRONG_CARD_PIN = "4321";
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -103,9 +101,9 @@ class AtmApplicationTests {
         saveTestCardInRepository();
 
         // when:
-        final var headers = new HttpHeaders();
-        headers.setBasicAuth(TEST_CARD_NUMBER, TEST_CARD_PIN);
-        final ResponseEntity<Object> response = restTemplate.exchange("/login", HttpMethod.POST, new HttpEntity<>(null, headers), Object.class);
+        final var response = restTemplate
+                .withBasicAuth(TEST_CARD_NUMBER, TEST_CARD_PIN)
+                .postForEntity("/login",null, Void.class);
 
         // then:
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.OK);
@@ -121,7 +119,7 @@ class AtmApplicationTests {
         int attemptCount = 1;
         for (int i = 1; i <= LoginAttemptService.MAX_LOGIN_ATTEMPT + 1; i++) {
             for (int j = 1; j <= i; j++) {
-                final ResponseEntity<Void> response = restTemplate.withBasicAuth(TEST_CARD_NUMBER, "4321")
+                final ResponseEntity<Void> response = restTemplate.withBasicAuth(TEST_CARD_NUMBER, WRONG_CARD_PIN)
                         .postForEntity("/login", null, Void.class);
                 assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.UNAUTHORIZED);
                 attemptCount = j;
@@ -146,9 +144,9 @@ class AtmApplicationTests {
         saveTestCardInRepository();
 
         // when:
-        final var headers = new HttpHeaders();
-        headers.setBasicAuth(TEST_CARD_NUMBER, "4321");
-        final ResponseEntity<Object> response = restTemplate.exchange("/login", HttpMethod.POST, new HttpEntity<>(null, headers), Object.class);
+        final var response = restTemplate
+                .withBasicAuth(TEST_CARD_NUMBER, WRONG_CARD_PIN)
+                .postForEntity("/login", null, Void.class);
 
         // then:
         assertThat(response.getStatusCode()).isEqualByComparingTo(HttpStatus.UNAUTHORIZED);
